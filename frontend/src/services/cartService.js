@@ -22,6 +22,7 @@ export const cartService = {
   },
 
   checkout: (checkoutData) => {
-    return api.post('/orders', checkoutData);
+    // FIX: Change from '/orders' to '/orders/checkout'
+    return api.post('/orders/checkout', checkoutData);
   }
 };

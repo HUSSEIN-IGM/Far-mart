@@ -5,6 +5,7 @@ from app.models import CartItem, Animal, User
 
 cart_bp = Blueprint('cart', __name__)
 
+# REMOVED OPTIONS method - Flask-CORS handles this automatically
 @cart_bp.route('/cart', methods=['GET'])
 @jwt_required()
 def get_cart():
@@ -45,6 +46,7 @@ def get_cart():
     except Exception as e:
         return jsonify({'message': 'Failed to fetch cart', 'error': str(e)}), 500
 
+# REMOVED OPTIONS method - Flask-CORS handles this automatically
 @cart_bp.route('/cart', methods=['POST'])
 @jwt_required()
 def add_to_cart():
@@ -101,6 +103,7 @@ def add_to_cart():
         db.session.rollback()
         return jsonify({'message': 'Failed to add to cart', 'error': str(e)}), 500
 
+# Rest of the file remains the same...
 @cart_bp.route('/cart/<int:item_id>', methods=['PUT'])
 @jwt_required()
 def update_cart_item(item_id):

@@ -1,8 +1,18 @@
-node_modules/
+# === Python / Flask ===
 venv/
-.env
 __pycache__/
 instance/
+.env
+
+# === Node / React ===
+node_modules/
 dist/
+build/
+
+# === System files ===
 .DS_Store
 Thumbs.db
+
+# === Backup or nested repos ===
+clean-farmart/
+.gittools/

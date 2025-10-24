@@ -10,6 +10,7 @@ const Cart = () => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -30,6 +31,16 @@ const Cart = () => {
       setCartItems(response.data.items || []);
     } catch (error) {
       console.error('Failed to load cart:', error);
+      
+      // More specific error handling
+      if (error.code === 'ERR_NETWORK') {
+        toast.error('Cannot connect to server. Please check if backend is running.');
+      } else if (error.response?.status === 401) {
+        toast.error('Please login again');
+        navigate('/login');
+      } else {
+        toast.error('Failed to load cart');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -43,6 +54,7 @@ const Cart = () => {
       await loadCart();
       toast.success('Cart updated');
     } catch (error) {
+      console.error('Failed to update cart:', error);
       toast.error('Failed to update cart');
     }
   };
@@ -53,19 +65,61 @@ const Cart = () => {
       await loadCart();
       toast.success('Item removed from cart');
     } catch (error) {
+      console.error('Failed to remove item:', error);
       toast.error('Failed to remove item');
     }
   };
 
   const handleCheckout = async () => {
+    if (isCheckingOut) return;
+    
+    setIsCheckingOut(true);
     try {
+      console.log('🛒 Starting checkout process...');
+      
+      // SIMPLIFIED: Direct checkout attempt without backend test
       const response = await cartService.checkout({
-        shipping_address: user?.address || 'Default address'
+        shipping_address: user?.address || 'Default shipping address',
+        notes: 'Order from Farmart'
       });
-      toast.success('Order placed successfully!');
+      
+      console.log('✅ Checkout successful:', response.data);
+      
+      toast.success('Order placed successfully! 🎉');
+      
+      // Clear local cart state
+      setCartItems([]);
+      
+      // Navigate to orders page
       navigate('/orders');
+      
     } catch (error) {
-      toast.error('Checkout failed: ' + (error.response?.data?.message || error.message));
+      console.error('❌ Checkout failed:', error);
+      
+      // Comprehensive error handling
+      let errorMessage = 'Checkout failed. Please try again.';
+      
+      if (error.code === 'ERR_NETWORK') {
+        errorMessage = 'Cannot connect to server. Please ensure the backend is running on localhost:5000';
+        console.log('💡 Backend might not be running. Check terminal where you ran: python run.py');
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Session expired. Please login again.';
+        navigate('/login');
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(`Checkout failed: ${errorMessage}`);
+      
+      // If it's a CORS error, show specific instructions
+      if (errorMessage.includes('CORS') || error.code === 'ERR_NETWORK') {
+        console.log('🔧 CORS/Network Issue Detected');
+        console.log('💡 Solution: Make sure your Flask backend is running and CORS is properly configured');
+      }
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
@@ -77,7 +131,11 @@ const Cart = () => {
   const total = cartItems.reduce((sum, item) => sum + (item.animal.price * item.quantity), 0);
 
   if (isLoading) {
-    return <div className="container">Loading cart...</div>;
+    return (
+      <div className="container">
+        <div className="loading">Loading cart...</div>
+      </div>
+    );
   }
 
   if (cartItems.length === 0) {
@@ -113,6 +171,9 @@ const Cart = () => {
                   <img 
                     src={item.animal.image_url || 'https://via.placeholder.com/100x100?text=Animal'} 
                     alt={item.animal.name}
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/100x100?text=Animal';
+                    }}
                   />
                 </div>
                 
@@ -179,9 +240,21 @@ const Cart = () => {
               <button 
                 className="btn btn-primary btn-checkout"
                 onClick={handleCheckout}
+                disabled={isCheckingOut}
               >
-                Proceed to Checkout
+                {isCheckingOut ? 'Processing...' : 'Proceed to Checkout'}
               </button>
+
+              <div className="debug-info" style={{ 
+                marginTop: '10px', 
+                padding: '10px', 
+                background: '#f8f9fa', 
+                borderRadius: '5px',
+                fontSize: '12px',
+                color: '#666'
+              }}>
+                <strong>Debug Info:</strong> Backend: localhost:5000 | Frontend: localhost:3000
+              </div>
 
               <p className="security-note">
                 🔒 Secure checkout · Your information is safe

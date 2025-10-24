@@ -104,14 +104,17 @@ class OrderStatus(enum.Enum):
     REJECTED = 'rejected'
     COMPLETED = 'completed'
 
+# FIXED: Single Order class definition with all fields
 class Order(db.Model):
     __tablename__ = 'orders'
+    __table_args__ = {'extend_existing': True}  # Prevents table redefinition errors
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     total_amount = db.Column(db.Float, nullable=False)
     status = db.Column(db.Enum(OrderStatus), default=OrderStatus.PENDING, index=True)
-    payment_intent_id = db.Column(db.String(100))
+    payment_intent_id = db.Column(db.String(100))  # M-Pesa CheckoutRequestID
+    payment_status = db.Column(db.String(20), default='pending')  # pending, completed, failed
     shipping_address = db.Column(db.Text)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -125,6 +128,7 @@ class Order(db.Model):
             'id': self.id,
             'total_amount': self.total_amount,
             'status': self.status.value,
+            'payment_status': self.payment_status,
             'payment_intent_id': self.payment_intent_id,
             'shipping_address': self.shipping_address,
             'notes': self.notes,
@@ -136,6 +140,7 @@ class Order(db.Model):
 
 class OrderItem(db.Model):
     __tablename__ = 'order_items'
+    __table_args__ = {'extend_existing': True}  # Prevents table redefinition errors
     
     id = db.Column(db.Integer, primary_key=True)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False, index=True)
@@ -156,6 +161,7 @@ class OrderItem(db.Model):
 
 class CartItem(db.Model):
     __tablename__ = 'cart_items'
+    __table_args__ = {'extend_existing': True}  # Prevents table redefinition errors
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
